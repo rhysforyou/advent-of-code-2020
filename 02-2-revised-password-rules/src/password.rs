@@ -1,3 +1,4 @@
+use regex::Regex;
 use std::fmt;
 use std::str::FromStr;
 
@@ -22,25 +23,43 @@ impl FromStr for PasswordEntry {
   type Err = ParsePasswordError;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    let dash_index = s.find('-').ok_or(ParsePasswordError)?;
-    let space_index = s.find(' ').ok_or(ParsePasswordError)?;
-    let colon_index = s.find(':').ok_or(ParsePasswordError)?;
+    lazy_static! {
+      static ref RE: Regex = Regex::new(r"^(\d+)-(\d+) (.): (.+)$").unwrap();
+    }
 
-    let required_letter = s.chars().nth(space_index + 1).ok_or(ParsePasswordError)?;
-    let first_index = s[0..dash_index]
+    let captures = RE.captures(s).ok_or(ParsePasswordError)?;
+
+    let first_index = captures
+      .get(1)
+      .ok_or(ParsePasswordError)?
+      .as_str()
       .parse::<usize>()
       .map_err(|_| ParsePasswordError)?
       - 1;
-    let second_index = s[dash_index + 1..space_index]
+
+    let second_index = captures
+      .get(2)
+      .ok_or(ParsePasswordError)?
+      .as_str()
       .parse::<usize>()
       .map_err(|_| ParsePasswordError)?
       - 1;
+
+    let required_letter = captures
+      .get(3)
+      .ok_or(ParsePasswordError)?
+      .as_str()
+      .chars()
+      .nth(0)
+      .ok_or(ParsePasswordError)?;
+
+    let password = captures.get(4).ok_or(ParsePasswordError)?.as_str();
 
     Ok(PasswordEntry {
-      required_letter: required_letter,
-      first_index: first_index,
-      second_index: second_index,
-      password: String::from(&s[colon_index + 2..s.len()]),
+      required_letter,
+      first_index,
+      second_index,
+      password: String::from(password),
     })
   }
 }
