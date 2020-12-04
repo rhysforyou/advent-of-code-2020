@@ -13,9 +13,9 @@ impl fmt::Display for ParsePasswordError {
 
 #[derive(Debug)]
 pub struct PasswordEntry {
-  required_letter: char,
   first_index: usize,
   second_index: usize,
+  required_letter: char,
   password: String,
 }
 
@@ -29,48 +29,40 @@ impl FromStr for PasswordEntry {
 
     let captures = RE.captures(s).ok_or(ParsePasswordError)?;
 
-    let first_index = captures
-      .get(1)
-      .ok_or(ParsePasswordError)?
-      .as_str()
-      .parse::<usize>()
-      .map_err(|_| ParsePasswordError)?
-      - 1;
-
-    let second_index = captures
-      .get(2)
-      .ok_or(ParsePasswordError)?
-      .as_str()
-      .parse::<usize>()
-      .map_err(|_| ParsePasswordError)?
-      - 1;
-
-    let required_letter = captures
-      .get(3)
-      .ok_or(ParsePasswordError)?
-      .as_str()
-      .chars()
-      .nth(0)
-      .ok_or(ParsePasswordError)?;
-
-    let password = captures.get(4).ok_or(ParsePasswordError)?.as_str();
-
     Ok(PasswordEntry {
-      required_letter,
-      first_index,
-      second_index,
-      password: String::from(password),
+      first_index: captures
+        .get(1)
+        .ok_or(ParsePasswordError)?
+        .as_str()
+        .parse::<usize>()
+        .map_err(|_| ParsePasswordError)?
+        - 1,
+      second_index: captures
+        .get(2)
+        .ok_or(ParsePasswordError)?
+        .as_str()
+        .parse::<usize>()
+        .map_err(|_| ParsePasswordError)?
+        - 1,
+      required_letter: captures
+        .get(3)
+        .ok_or(ParsePasswordError)?
+        .as_str()
+        .chars()
+        .nth(0)
+        .ok_or(ParsePasswordError)?,
+      password: String::from(captures.get(4).ok_or(ParsePasswordError)?.as_str()),
     })
   }
 }
 
 impl PasswordEntry {
   pub fn is_valid(&self) -> bool {
-    let required_letter_at_first_index =
+    let is_letter_at_first_index =
       self.password.chars().nth(self.first_index) == Some(self.required_letter);
-    let required_letter_at_second_index =
+    let is_letter_at_second_index =
       self.password.chars().nth(self.second_index) == Some(self.required_letter);
-    (required_letter_at_first_index || required_letter_at_second_index)
-      && !(required_letter_at_first_index && required_letter_at_second_index)
+    (is_letter_at_first_index || is_letter_at_second_index)
+      && !(is_letter_at_first_index && is_letter_at_second_index)
   }
 }
